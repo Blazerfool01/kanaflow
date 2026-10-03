@@ -16,11 +16,16 @@ const git = (...args) => {
 };
 const section = (markdown, heading) => {
   if (!markdown) return null;
-  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = markdown.match(new RegExp("^##\\s+" + escaped + "\\s*\\r?\\n([\\s\\S]*?)(?=^##\\s+|\\s*$)", "m"));
-  if (!match) return null;
-  const value = match[1].trim();
-  if (!value || /^(define|describe|explain)\\b/i.test(value)) return null;
+  const lines = markdown.split(/\r?\n/);
+  const headingIndex = lines.findIndex((line) => line.trim() === "## " + heading);
+  if (headingIndex < 0) return null;
+  const body = [];
+  for (const line of lines.slice(headingIndex + 1)) {
+    if (/^##\s+/.test(line)) break;
+    body.push(line);
+  }
+  const value = body.join("\n").trim();
+  if (!value || /^(define|describe|explain)\b/i.test(value)) return null;
   return value;
 };
 
