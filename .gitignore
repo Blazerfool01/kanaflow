@@ -1,0 +1,20 @@
+﻿# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Secrets / local config
+.env
+.env.*
+!.env.example
+
+# Logs / temp
+*.log
+tmp/
+temp/
+.cache/
+
+# Project Kickstart bootstrap files
+ProjectKickstart.ps1
+start-project.cmd
