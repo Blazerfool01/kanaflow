@@ -17,3 +17,5 @@ The script only reads Git metadata, `PROJECT.md`, and `package.json`, then write
 - Can the artifact be committed on an isolated branch and reviewed before merging?
 
 It does not set up an always-on environment or dashboard. If the environment cannot commit, keep the generated JSON as run output and report that limitation.
+
+Repeat the trial after a small documentation commit to confirm the report captures the new source commit.
