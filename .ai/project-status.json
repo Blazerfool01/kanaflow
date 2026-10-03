@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "project": "KanaFlow",
+  "generatedAt": "2026-10-03T23:16:40.929Z",
+  "source": "scripts/project-status.mjs",
+  "repository": {
+    "branch": "experiment/codex-cloud-status-v0.1",
+    "commit": "4eee4bf",
+    "workingTree": "clean"
+  },
+  "projectState": {
+    "goal": null,
+    "currentMilestone": null,
+    "whyItMatters": null,
+    "acceptanceCriteria": "- [ ] Core behaviour works.\n- [ ] Relevant tests/checks pass.\n- [ ] No unrelated behaviour changed.\n- [ ] Result is manually verified where practical."
+  },
+  "checks": {
+    "testScriptAvailable": false,
+    "testCommand": null,
+    "testStatus": "not_run"
+  },
+  "inputs": {
+    "projectBriefPresent": true,
+    "packageJsonPresent": false
+  },
+  "notes": [
+    "This report contains collected repository facts only.",
+    "Tests are not run by this script; record a real test result after running the project test command."
+  ]
+}
