@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>KanaFlow Project Status</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0b0d12;
+      color: #f4f7fb;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: #0b0d12; }
+    main { width: min(980px, calc(100% - 32px)); margin: 40px auto; }
+    header { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+    h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 3rem); }
+    .muted { color: #9ba6b5; }
+    .grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; }
+    .card { grid-column: span 6; border: 1px solid #232a36; border-radius: 18px; padding: 18px; background: #121722; }
+    .card.wide { grid-column: 1 / -1; }
+    .label { color: #8f9bad; font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; }
+    .value { margin-top: 6px; font-size: 1.05rem; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .status { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #303849; border-radius: 999px; font-size: .9rem; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+    .ok { color: #7bd88f; }
+    .warn { color: #f2c66d; }
+    .bad { color: #ff7a7a; }
+    .neutral { color: #aab4c3; }
+    pre { margin: 0; white-space: pre-wrap; font: inherit; }
+    button { border: 1px solid #303849; background: #171d29; color: #f4f7fb; padding: 9px 12px; border-radius: 10px; cursor: pointer; }
+    button:hover { background: #1d2532; }
+    .error { border-color: #63333a; background: #201316; }
+    @media (max-width: 700px) {
+      .card { grid-column: 1 / -1; }
+      header { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <div class="label">Read-only project viewer</div>
+        <h1 id="project">KanaFlow</h1>
+        <div id="freshness" class="muted">Loading status…</div>
+      </div>
+      <button id="refresh" type="button">Refresh</button>
+    </header>
+
+    <div id="state" class="grid" aria-live="polite"></div>
+  </main>
+
+  <script>
+    const OWNER = "Blazerfool01";
+    const REPO = "kanaflow";
+    const DEFAULT_BRANCH = "experiment/status-viewer-v0.1";
+    const params = new URLSearchParams(location.search);
+    const branch = params.get("branch") || DEFAULT_BRANCH;
+    const statusUrl =
+      "https://raw.githubusercontent.com/" +
+      OWNER + "/" + REPO + "/" + encodeURIComponent(branch) +
+      "/.ai/project-status.json";
+
+    const el = (tag, attrs = {}, text = "") => {
+      const node = document.createElement(tag);
+      for (const [key, value] of Object.entries(attrs)) {
+        if (key === "class") node.className = value;
+        else node.setAttribute(key, value);
+      }
+      node.textContent = text;
+      return node;
+    };
+
+    function validateStatus(data) {
+      const errors = [];
+      if (!data || typeof data !== "object") return ["Status payload is not an object."];
+      if (data.schemaVersion !== 1) errors.push("Unsupported schemaVersion.");
+      if (typeof data.project !== "string" || !data.project) errors.push("Missing project.");
+      if (!data.repository || typeof data.repository !== "object") errors.push("Missing repository.");
+      if (!data.projectState || typeof data.projectState !== "object") errors.push("Missing projectState.");
+      if (!data.checks || typeof data.checks !== "object") errors.push("Missing checks.");
+      if (!data.inputs || typeof data.inputs !== "object") errors.push("Missing inputs.");
+      if (!Array.isArray(data.notes)) errors.push("Missing notes array.");
+      if (data.checks && !["not_run", "passed", "failed"].includes(data.checks.testStatus)) {
+        errors.push("Invalid checks.testStatus.");
+      }
+      return errors;
+    }
+
+    function card(label, value, wide = false) {
+      const box = el("section", { class: "card" + (wide ? " wide" : "") });
+      box.append(el("div", { class: "label" }, label));
+      box.append(el("div", { class: "value" }, value ?? "—"));
+      return box;
+    }
+
+    function render(data) {
+      document.getElementById("project").textContent = data.project;
+      const generated = new Date(data.generatedAt);
+      document.getElementById("freshness").textContent =
+        "Generated " + (Number.isNaN(generated.getTime()) ? data.generatedAt : generated.toLocaleString());
+
+      const root = document.getElementById("state");
+      root.replaceChildren();
+
+      const testClass =
+        data.checks.testStatus === "passed" ? "ok" :
+        data.checks.testStatus === "failed" ? "bad" :
+        "warn";
+      const testLabel =
+        data.checks.testStatus === "not_run" ? "Tests not run" :
+        data.checks.testStatus === "passed" ? "Tests passed" :
+        "Tests failed";
+
+      const summary = el("section", { class: "card wide" });
+      summary.append(el("div", { class: "label" }, "Current state"));
+      const status = el("div", { class: "status " + testClass });
+      status.append(el("span", { class: "dot" }));
+      status.append(document.createTextNode(testLabel));
+      summary.append(el("div", { style: "margin-top:10px" }));
+      summary.lastChild.append(status);
+      root.append(summary);
+
+      root.append(
+        card("Branch", data.repository.branch),
+        card("Source commit", data.repository.commit),
+        card("Working tree at collection", data.repository.workingTree),
+        card("Collector", data.source),
+        card("Goal", data.projectState.goal),
+        card("Current milestone", data.projectState.currentMilestone),
+        card("Why it matters", data.projectState.whyItMatters),
+        card("Test command", data.checks.testCommand),
+        card("Acceptance criteria", data.projectState.acceptanceCriteria, true),
+        card(
+          "Inputs",
+          "PROJECT.md: " + (data.inputs.projectBriefPresent ? "present" : "missing") +
+          "\npackage.json: " + (data.inputs.packageJsonPresent ? "present" : "missing"),
+          true
+        ),
+        card("Notes", data.notes.length ? data.notes.map((n, i) => (i + 1) + ". " + n).join("\n") : "—", true)
+      );
+    }
+
+    function renderError(message) {
+      const root = document.getElementById("state");
+      root.replaceChildren();
+      const box = el("section", { class: "card wide error" });
+      box.append(el("div", { class: "label" }, "Viewer error"));
+      box.append(el("div", { class: "value" }, message));
+      root.append(box);
+    }
+
+    async function load() {
+      document.getElementById("freshness").textContent = "Loading " + branch + "…";
+      try {
+        const response = await fetch(statusUrl, { cache: "no-store" });
+        if (!response.ok) throw new Error("HTTP " + response.status + " while loading status JSON.");
+        const data = await response.json();
+        const errors = validateStatus(data);
+        if (errors.length) throw new Error(errors.join(" "));
+        render(data);
+      } catch (error) {
+        document.getElementById("freshness").textContent = "Could not load project status.";
+        renderError(error instanceof Error ? error.message : String(error));
+      }
+    }
+
+    document.getElementById("refresh").addEventListener("click", load);
+    load();
+  </script>
+</body>
+</html>

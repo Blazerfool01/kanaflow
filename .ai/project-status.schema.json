@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "project-status.schema.json",
+  "title": "KanaFlow project status",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "project", "generatedAt", "source", "repository", "projectState", "checks", "inputs", "notes"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "project": { "type": "string", "minLength": 1 },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "source": { "type": "string", "minLength": 1 },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["branch", "commit", "workingTree"],
+      "properties": {
+        "branch": { "type": ["string", "null"] },
+        "commit": { "type": ["string", "null"] },
+        "workingTree": { "enum": ["clean", "dirty", null] }
+      }
+    },
+    "projectState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["goal", "currentMilestone", "whyItMatters", "acceptanceCriteria"],
+      "properties": {
+        "goal": { "type": ["string", "null"] },
+        "currentMilestone": { "type": ["string", "null"] },
+        "whyItMatters": { "type": ["string", "null"] },
+        "acceptanceCriteria": { "type": ["string", "null"] }
+      }
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["testScriptAvailable", "testCommand", "testStatus"],
+      "properties": {
+        "testScriptAvailable": { "type": "boolean" },
+        "testCommand": { "type": ["string", "null"] },
+        "testStatus": { "enum": ["not_run", "passed", "failed"] }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectBriefPresent", "packageJsonPresent"],
+      "properties": {
+        "projectBriefPresent": { "type": "boolean" },
+        "packageJsonPresent": { "type": "boolean" }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
